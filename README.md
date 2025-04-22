@@ -45,7 +45,12 @@ Then use it like so:
                    :db/valueType   :db.type/long
                    :db/cardinality :db.cardinality/one}])
 
-(d/transact conn [{:db/id 1, :name "Ivan", :age 15}])
+(d/transact conn [{:name "Ivan" :age 15}])
+
+(d/q '[:find (pull ?e [*])
+       :in $ ?name
+       :where [?e :name ?name]]
+     @conn "Ivan")
 
 (d/release conn)
 ```
