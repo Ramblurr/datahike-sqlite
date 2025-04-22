@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+DATAHIKE_STORE_BACKEND=sqlite DATAHIKE_STORE_CONFIG='{:dbtype "sqlite" :dbname "datahike.sqlite"}' clojure -M:test "$@"
