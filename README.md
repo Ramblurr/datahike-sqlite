@@ -2,9 +2,20 @@
 
 This library provides a backend for [Datahike][datahike] using [SQLite][sqlite] as the backing store.
 
-**Why not [datahike-jdbc]?** SQLite is different than other JDBC supported databases, the biggest of which is that we do not need connection pooling and the complexity that brings.
+**Why not [datahike-jdbc]?** SQLite is different than other JDBC supported databases. The biggest difference is that we do not need connection pooling and the complexity that brings.
 
 ## Usage
+
+Include the library in your deps.edn, along with the peer dependencies.
+
+``` clojure
+ org.xerial/sqlite-jdbc   {:mvn/version "3.49.1.0"}
+ io.replikativ/datahike   {:mvn/version "0.6.1596"}
+ ramblurr/datahike-sqlite {:git/url "https://github.com/ramblurr/datahike-sqlite"
+                           :git/sha "0626e8cdab400f895f8c2fba3ada108263107ea8"}
+```
+
+Then use it like so:
 
 ``` clojure
 (require
