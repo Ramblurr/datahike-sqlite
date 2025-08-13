@@ -1,0 +1,6 @@
+SPDXVersion: SPDX-2.1
+DataLicense: CC0-1.0
+PackageName: datahike-sqlite
+PackageOriginator: Casey Link <casey@outskirtslabs.com>
+PackageHomePage: https://github.com/Ramblurr/datahike-sqlite
+PackageLicenseDeclared: MIT

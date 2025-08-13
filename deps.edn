@@ -5,7 +5,8 @@
          io.replikativ/superv.async        {:mvn/version "0.3.48"}
          andersmurphy/sqlite4clj {:git/url "https://github.com/andersmurphy/sqlite4clj"
                                   :git/sha "e0346ef372bf5fe359c108e7bad723fdd9d23956"}}
- :aliases {:dev {:jvm-opts    ["--enable-native-access=ALL-UNNAMED"
+ :aliases {:dev {:extra-deps {criterium/criterium           {:mvn/version "0.4.6"}}
+                 :jvm-opts    ["--enable-native-access=ALL-UNNAMED"
                                "-Djdk.attach.allowAttachSelf" ;; https://nrepl.org/nrepl/installation.html#jvmti
                                ]}
            :test {:extra-paths ["test"]

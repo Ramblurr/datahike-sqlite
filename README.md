@@ -73,15 +73,9 @@ SQLite specific options can be passed in this map for example `:journal_mode "WA
   bash -x ./bin/run-integration-tests
 ```
 
-## License
+## License: MIT License
 
-```
-Copyright © 2020 lambdaforge UG (haftungsbeschränkt)
-Copyright © 2021-2022 Judith Massa, Alexander Oloo
-Copyright © 2025 Outskirts Labs e.U.
-
-This program and the accompanying materials are made available under the terms of the Eclipse Public License 2.0.
-```
+Copyright © 2025 Casey Link <casey@outskirtslabs.com> Distributed under the [MIT](https://spdx.org/licenses/MIT.html).
 
 [sqlite]: https://www.sqlite.org
 [datahike]: https://github.com/replikativ/datahike
