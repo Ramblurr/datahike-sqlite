@@ -1,16 +1,16 @@
-{:paths ["src"]
- :deps  {org.clojure/clojure               {:mvn/version "1.12.1"}
-         io.replikativ/datahike            {:mvn/version "0.6.1601"}
-         ;; io.replikativ/konserve            {:mvn/version "0.7.319"}
-         io.replikativ/superv.async        {:mvn/version "0.3.48"}
-         andersmurphy/sqlite4clj {:git/url "https://github.com/andersmurphy/sqlite4clj"
-                                  :git/sha "e0346ef372bf5fe359c108e7bad723fdd9d23956"}}
- :aliases {:dev {:extra-deps {criterium/criterium           {:mvn/version "0.4.6"}}
-                 :jvm-opts    ["--enable-native-access=ALL-UNNAMED"
+{:paths   ["src"]
+ :deps    {org.clojure/clojure     {:mvn/version "1.12.1"}
+           andersmurphy/sqlite4clj {:git/url "https://github.com/andersmurphy/sqlite4clj"
+                                    :git/sha "e0346ef372bf5fe359c108e7bad723fdd9d23956"}}
+ :aliases {:dev  {:extra-deps {criterium/criterium        {:mvn/version "0.4.6"}
+                               io.replikativ/superv.async {:mvn/version "0.3.48"}
+                               io.replikativ/datahike     {:mvn/version "0.6.1601"}
+                               io.replikativ/konserve     {:mvn/version "0.7.319"}}
+                  :jvm-opts   ["--enable-native-access=ALL-UNNAMED"
                                "-Djdk.attach.allowAttachSelf" ;; https://nrepl.org/nrepl/installation.html#jvmti
                                ]}
            :test {:extra-paths ["test"]
-                  :extra-deps  {lambdaisland/kaocha    {:mvn/version "1.91.1392"}}
+                  :extra-deps  {lambdaisland/kaocha {:mvn/version "1.91.1392"}}
                   :main-opts   ["-m" "kaocha.runner"]}
 
            :format {:extra-deps {cljfmt/cljfmt {:mvn/version "0.9.2"}}
