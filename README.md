@@ -20,8 +20,8 @@ Unlike the [datahike-jdbc][datahike-jdbc] backend, this implementation uses [sql
 
 Include the library in your deps.edn:
 
-``` clojure
- io.replikativ/datahike   {:mvn/version "0.6.1601"}
+```clojure
+ io.replikativ/datahike   {:mvn/version "0.6.1601"} ;; Use latest version
  ramblurr/datahike-sqlite {:git/url "https://github.com/ramblurr/datahike-sqlite"
                            :git/sha "c94e449be351b13c7b279d39ee3266cc22dd8f7d"}
 ```
