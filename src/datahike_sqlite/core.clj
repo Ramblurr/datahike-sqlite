@@ -30,7 +30,7 @@
 
 (defmethod default-config :sqlite [config]
   ;; with the introduction of the store-identity config data should derived from inputs and not set to default values
-  (let [env-config    (map-from-env :datahike-store-config {})
+  (let [env-config (map-from-env :datahike-store-config {})
         passed-config config]
     (merge env-config passed-config)))
 
@@ -39,11 +39,14 @@
 (s/def :datahike.store.sqlite/dbname string?)
 (s/def :datahike.store.sqlite/classname string?)
 (s/def :datahike.store.sqlite/table string?)
+(s/def :datahike.store.sqlite/sqlite-opts map?)
+
 (s/def ::sqlite (s/keys :req-un [:datahike.store.sqlite/backend
                                  :datahike.store.sqlite/dbname]
                         :opt-un [:datahike.store.sqlite/dbtype
                                  :datahike.store.sqlite/classname
-                                 :datahike.store.sqlite/table]))
+                                 :datahike.store.sqlite/table
+                                 :datahike.store.sqlite/sqlite-opts]))
 
 (defmethod config-spec :sqlite [_] ::sqlite)
 
