@@ -15,4 +15,5 @@
                   lint              (shell (str "clj-kondo" " --fail-level error"
                                                 (if (seq *command-line-args*)
                                                   (str " --lint " (first *command-line-args*))
-                                                  " --lint src test")))}}
+                                                  " --lint src test")))
+                  jar (clojure "-T:build jar")}}
