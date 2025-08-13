@@ -1,6 +1,4 @@
 {:min-bb-version "0.8.156"
- :deps           {}
- :paths          []
  :tasks          {:requires         ([babashka.fs :as fs]
                                      [clojure.string :as str]
                                      [babashka.tasks :refer [shell]])
@@ -9,6 +7,7 @@
                   deps-tree         (clojure "-X:deps tree :aliases '[:dev]'")
                   dev               {:doc "Start a local development server" :task (clojure "-M:dev:repl/dev")}
                   fmt               (shell "cljfmt -v fix src test")
+                  fmt.check               (shell "cljfmt -v check src test")
                   lint.copy-configs (let [cp (-> (shell {:out :string} "clojure -Spath -M:test:dev") :out str/trim)]
                                       (shell (str "clj-kondo --lint " cp " --dependencies --copy-configs --skip-lint")))
                   lint.kondo        (shell "clj-kondo" *command-line-args*)
@@ -16,4 +15,5 @@
                                                 (if (seq *command-line-args*)
                                                   (str " --lint " (first *command-line-args*))
                                                   " --lint src test")))
-                  jar (clojure "-T:build jar")}}
+                  jar (clojure "-T:build jar")
+                  ci {:depends [test lint fmt.check jar]}}}
