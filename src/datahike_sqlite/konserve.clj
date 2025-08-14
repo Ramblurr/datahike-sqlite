@@ -39,58 +39,14 @@
         db (d/init-db! dbname sqlite-opts)]
     db))
 
-(def TV-SQLITE4CLJ-COMPRESS-PASSTHROUGH 0)
-(def TV-SQLITE4CLJ-COMPRESS-ZSTD 1)
-
-(defn wrap-bytes
-  "sqlite4clj expects the byte array to have two type bytes: [C T data] where C is the compression type and T is the serialization type.
-
-  Compression:
-  0 is passthrough, 1 is builtin zstd.
-
-  Serialization:
-  0 is passthrough, 1 is builtin deed.
-
-  We always set serialization to 0 because konserve already serializes the data with fressian, however we
-  conditionally set the compression type byte based on the compressor used. If a konserve compressor is used we pass the bytes through, otherwise we use the builtin zstd compression."
-  [data _compressor]
-  ;; uncomment this once we get the new version of sqlite4clj that has the features documented in the above docstring
-  #_(when data
-      (let [compress-byte (if (= _compressor null-compressor)
-                            TV-SQLITE4CLJ-COMPRESS-ZSTD
-                            TV-SQLITE4CLJ-COMPRESS-PASSTHROUGH)
-            serialize-byte 0 ; Always 0 - konserve handles serialization
-            wrapped (byte-array (+ 2 (count data)))]
-        (aset-byte wrapped 0 compress-byte)
-        (aset-byte wrapped 1 serialize-byte)
-        (System/arraycopy data 0 wrapped 2 (count data))
-        wrapped))
-  (when data
-    (let [type-byte 0
-          wrapped (byte-array (+ 1 (count data)))]
-      (aset-byte wrapped 0 type-byte)
-      (System/arraycopy data 0 wrapped 1 (count data))
-      wrapped)))
-
-(defn unwrap-bytes
-  "Remove the two type bytes [C T] from the beginning of the data.
-  sqlite4clj automatically handles decompression based on the C byte."
-  [data]
-
-  ;; uncomment this once we get the new version of sqlite4clj that has the features documented in the above docstring
-  #_(when (and data (> (count data) 1))
-      (java.util.Arrays/copyOfRange ^bytes data 2 (count data)))
-  (when (and data (> (count data) 1))
-    (java.util.Arrays/copyOfRange ^bytes data 1 (count data))))
-
 (defn create-statement [table]
   [(str "CREATE TABLE IF NOT EXISTS " table " (id varchar(100) primary key, header bytea, meta bytea, val bytea)")])
 
-(defn upsert-statement [table id header meta value compressor]
+(defn upsert-statement [table id header meta value]
   [(str "INSERT INTO " table " (id, header, meta, val) VALUES (?, ?, ?, ?) "
         "ON CONFLICT (id) DO UPDATE "
         "SET header = excluded.header, meta = excluded.meta, val = excluded.val;")
-   id (wrap-bytes header compressor) (wrap-bytes meta compressor) (wrap-bytes value compressor)])
+   id header meta value])
 
 (defn select-exists-statement [table id]
   [(str "SELECT 1 FROM " table " WHERE id = ?") id])
@@ -140,9 +96,9 @@
                  (select-row-statement table id))]
     (when res
       (let [[_ header meta val] (first res)]
-        {:header (unwrap-bytes header)
-         :meta (unwrap-bytes meta)
-         :value (unwrap-bytes val)}))))
+        {:header header
+         :meta meta
+         :value val}))))
 
 (extend-protocol PBackingLock
   Boolean
@@ -155,7 +111,7 @@
     (async+sync (:sync? env) *default-sync-translation*
                 (go-try- (let [{:keys [header meta value]} @data]
                            (if (and header meta value)
-                             (let [ps (upsert-statement (:table db) key header meta value (:compressor db))]
+                             (let [ps (upsert-statement (:table db) key header meta value)]
                                (d/q (:writer (:db db)) ps))
                              (throw (ex-info "Updating a row is only possible if header, meta and value are set." {:data @data})))
                            (reset! data {})))))
@@ -196,17 +152,17 @@
 (defn- batch-insert-sequential
   "Execute individual INSERT statements for each key-value pair.
   Returns a map of store-key -> success/failure status."
-  [tx table store-key-values compressor]
+  [tx table store-key-values]
   (let [exec-update (fn [[store-key data]]
                       (let [{:keys [header meta value]} data
-                            ps (upsert-statement table store-key header meta value compressor)
+                            ps (upsert-statement table store-key header meta value)
                             exec-result (d/q tx ps)]
                         [store-key (some? exec-result)]))]
     (into {} (map exec-update store-key-values))))
 
 (defn- batch-insert-multi-row
   "Execute a single INSERT statement with multiple VALUES clauses."
-  [tx table store-key-values compressor]
+  [tx table store-key-values]
   (let [entries (vec store-key-values)
         batch-size (count entries)
         ;; Safety limit to avoid hitting SQLITE_MAX_VARIABLE_NUMBER
@@ -218,9 +174,9 @@
                                 params (mapcat (fn [[store-key data]]
                                                  (let [{:keys [header meta value]} data]
                                                    [store-key
-                                                    (wrap-bytes header compressor)
-                                                    (wrap-bytes meta compressor)
-                                                    (wrap-bytes value compressor)]))
+                                                    header
+                                                    meta
+                                                    value]))
                                                batch)
                                 query (into [sql] params)]
                             (d/q tx query)
@@ -230,7 +186,7 @@
       (process-batch entries)
       (apply merge (map process-batch (partition-all max-batch entries))))))
 
-(defrecord SQLiteTable [db-spec db table compressor]
+(defrecord SQLiteTable [db-spec db table]
   PBackingStore
   (-create-blob [this store-key env]
     (async+sync (:sync? env) *default-sync-translation*
@@ -285,8 +241,8 @@
                  (with-write-tx db
                    (fn [tx]
                      (case *batch-insert-strategy*
-                       :sequential (batch-insert-sequential tx table store-key-values compressor)
-                       :multi-row (batch-insert-multi-row tx table store-key-values compressor))))))))
+                       :sequential (batch-insert-sequential tx table store-key-values)
+                       :multi-row (batch-insert-multi-row tx table store-key-values))))))))
 
 (defn prepare-spec [db-spec opts-table]
   (-> db-spec
@@ -299,15 +255,14 @@
         db-spec (-> db-spec (prepare-spec (:table params)) (assoc :sync? (:sync? complete-opts)))
         db (init-db db-spec)
         _ (assert (:table db-spec))
-        compressor (or (:compressor params) null-compressor)
-        backing (SQLiteTable. db-spec db (:table db-spec) compressor)
+        backing (SQLiteTable. db-spec db (:table db-spec))
         config (merge {:opts complete-opts
                        :config {:sync-blob? true
                                 :in-place? true
                                 :no-backup? true
                                 :lock-blob? true}
                        :default-serializer :FressianSerializer
-                       :compressor compressor
+                       :compressor null-compressor
                        :encryptor null-encryptor
                        :buffer-size (* 1024 1024)}
                       (dissoc params :opts :config))]
@@ -327,7 +282,7 @@
         db-spec (prepare-spec db-spec table)
         _ (assert (:table db-spec))
         db (init-db db-spec)]
-    (-delete-store (SQLiteTable. db-spec db (:table db-spec) null-compressor) complete-opts)))
+    (-delete-store (SQLiteTable. db-spec db (:table db-spec)) complete-opts)))
 
 (comment
 

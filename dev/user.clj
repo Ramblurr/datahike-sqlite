@@ -6,6 +6,7 @@
    [datahike.api :as d]))
 
 (comment
+  (clojure.repl.deps/sync-deps)
 
   (def cfg {:store {:backend :sqlite
                     :dbname  "for-the-ceo.sqlite"}})
